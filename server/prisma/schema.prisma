@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum UserStatut {
+  ACTIF
+  INACTIF
+}
+
+enum PlanType {
+  PCOP
+  PCG
+}
+
+enum DocType {
+  CA
+  BA
+}
+
+enum DocStatut {
+  BROUILLON
+  ARCHIVE
+  VALIDE
+}
+
+enum Section {
+  FONCTIONNEMENT
+  INVESTISSEMENT
+}
+
+enum Nature {
+  DEPENSE
+  RECETTE
+}
+
+enum AuditAction {
+  LOGIN
+  LOGIN_ECHEC
+  LOGOUT
+  USER_CREATE
+  USER_STATUT
+  USER_RESET_PWD
+  DOC_SAVE
+  DOC_ARCHIVE
+  BA_MODIFY
+  DOC_PRINT
+}
+
+model User {
+  id             String     @id @default(uuid())
+  identifiant    String?    @unique // identifiant administrateur
+  emailIdx       String?    @unique // HMAC(email) : login + unicité
+  emailEnc       String? // AES-256-GCM
+  nomEnc         String
+  prenomsEnc     String
+  matricule      String     @unique
+  passwordHash   String
+  role           Role       @default(AGENT)
+  statut         UserStatut @default(ACTIF)
+  mustChangePwd  Boolean    @default(true)
+  failedAttempts Int        @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  audits      AuditLog[]
+  docsCreated Document[] @relation("DocCreatedBy")
+  docsUpdated Document[] @relation("DocUpdatedBy")
+
+  @@map("users")
+}
+
+model Etablissement {
+  id    String   @id @default(uuid())
+  code  String   @unique
+  nom   String
+  plan  PlanType
+  actif Boolean  @default(true)
+  ordre Int      @default(0)
+
+  documents Document[]
+
+  @@map("etablissements")
+}
+
+model PlanCompte {
+  id       Int      @id @default(autoincrement())
+  plan     PlanType
+  numero   Int // 1..999
+  intitule String
+  niveau   Int // 1 = classe, 2 = poste, 3 = rubrique
+
+  lignesCa LigneCA[]
+  lignesBa LigneBA[]
+
+  @@unique([plan, numero])
+  @@map("plan_comptes")
+}
+
+model Document {
+  id              String    @id @default(uuid())
+  etablissementId String
+  exercice        Int
+  type            DocType
+  statut          DocStatut @default(BROUILLON)
+  pdfPath         String?
+  pdfSha256       String?
+  archivedAt      DateTime?
+  createdById     String
+  updatedById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  etablissement Etablissement @relation(fields: [etablissementId], references: [id])
+  createdBy     User          @relation("DocCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User          @relation("DocUpdatedBy", fields: [updatedById], references: [id])
+  lignesCa      LigneCA[]
+  lignesBa      LigneBA[]
+
+  @@unique([etablissementId, exercice, type])
+  @@index([exercice, type, statut])
+  @@map("documents")
+}
+
+model LigneCA {
+  id               String  @id @default(uuid())
+  documentId       String
+  nature           Nature
+  section          Section
+  compteId         Int
+  creditsOuvertsN1 BigInt  @default(0) // Ar
+  realisation      BigInt  @default(0) // mandatements | recouvrement
+
+  document Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  compte   PlanCompte @relation(fields: [compteId], references: [id])
+
+  @@unique([documentId, nature, compteId])
+  @@map("lignes_ca")
+}
+
+model LigneBA {
+  id             String  @id @default(uuid())
+  documentId     String
+  section        Section
+  compteId       Int
+  budgetPrimitif BigInt  @default(0)
+  excedent       BigInt  @default(0) // budget additionnel = primitif + excédent (calculé)
+
+  document Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  compte   PlanCompte @relation(fields: [compteId], references: [id])
+
+  @@unique([documentId, compteId])
+  @@map("lignes_ba")
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String?
+  action      AuditAction
+  identifiant String? // identifiant saisi (LOGIN_ECHEC)
+  entite      String?
+  entiteId    String?
+  details     Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
