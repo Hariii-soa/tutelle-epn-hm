@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:
 const key = Buffer.from(process.env.ENC_KEY ?? "", "hex");
 const idxKey = Buffer.from(process.env.IDX_KEY ?? "", "hex");
 if (key.length !== 32 || idxKey.length !== 32) throw new Error("ENC_KEY / IDX_KEY invalides");
+if (key.equals(idxKey)) throw new Error("ENC_KEY et IDX_KEY doivent être différentes");
 
 const IV_LEN = 12;
 const TAG_LEN = 16;

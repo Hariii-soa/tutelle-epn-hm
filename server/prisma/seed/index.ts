@@ -1,13 +1,10 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
-import { PrismaPg } from "@prisma/adapter-pg";
 import argon2 from "argon2";
-import { PrismaClient, PlanType, Role } from "../../src/generated/prisma/client.js";
+import { PlanType, Role } from "../../src/generated/prisma/client.js";
 import { encrypt } from "../../src/common/crypto/aes-gcm.js";
+import { prisma } from "../../src/common/db/prisma.js";
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
-});
 const PCG_CODE = "CCI";
 
 const ETABS = [
