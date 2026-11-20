@@ -11,6 +11,7 @@ import auditRoutes from "./modules/audit/audit.routes.js";
 import accueilRoutes from "./modules/accueil/accueil.routes.js";
 import etablissementsRoutes from "./modules/etablissements/etablissements.routes.js";
 import caRoutes from "./modules/ca/ca.routes.js";
+import baRoutes from "./modules/ba/ba.routes.js";
 
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/audit", auditRoutes);
 app.use("/api/accueil", accueilRoutes);
 app.use("/api/etablissements", etablissementsRoutes);
 app.use("/api/ca", caRoutes);
+app.use("/api/ba", baRoutes);
 
 app.use((_req, _res, next) => next(new HttpError(404, "Ressource introuvable", "NOT_FOUND")));
 app.use(errorHandler);
