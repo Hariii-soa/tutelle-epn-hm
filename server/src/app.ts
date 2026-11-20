@@ -10,6 +10,8 @@ import usersRoutes from "./modules/users/users.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
 import accueilRoutes from "./modules/accueil/accueil.routes.js";
 import etablissementsRoutes from "./modules/etablissements/etablissements.routes.js";
+import caRoutes from "./modules/ca/ca.routes.js";
+
 
 const app = express();
 app.disable("x-powered-by");
@@ -28,6 +30,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/accueil", accueilRoutes);
 app.use("/api/etablissements", etablissementsRoutes);
+app.use("/api/ca", caRoutes);
 
 app.use((_req, _res, next) => next(new HttpError(404, "Ressource introuvable", "NOT_FOUND")));
 app.use(errorHandler);
