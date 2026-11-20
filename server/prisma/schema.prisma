@@ -30,7 +30,6 @@ enum DocType {
 enum DocStatut {
   BROUILLON
   ARCHIVE
-  VALIDE
 }
 
 enum Section {
@@ -41,6 +40,14 @@ enum Section {
 enum Nature {
   DEPENSE
   RECETTE
+}
+
+enum Rubrique {
+  GLOBAL
+  RECETTE_FONCTIONNEMENT
+  RECETTE_INVESTISSEMENT
+  DEPENSE_FONCTIONNEMENT
+  DEPENSE_INVESTISSEMENT
 }
 
 enum AuditAction {
@@ -123,6 +130,7 @@ model Document {
   updatedById     String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  rubrique        Rubrique  @default(GLOBAL)
 
   etablissement Etablissement @relation(fields: [etablissementId], references: [id])
   createdBy     User          @relation("DocCreatedBy", fields: [createdById], references: [id])
@@ -130,7 +138,7 @@ model Document {
   lignesCa      LigneCA[]
   lignesBa      LigneBA[]
 
-  @@unique([etablissementId, exercice, type])
+  @@unique([etablissementId, exercice, type, rubrique])
   @@index([exercice, type, statut])
   @@map("documents")
 }
@@ -158,6 +166,7 @@ model LigneBA {
   compteId       Int
   budgetPrimitif BigInt  @default(0)
   excedent       BigInt  @default(0) // budget additionnel = primitif + excédent (calculé)
+  budgetAdditionnel BigInt  @default(0)
 
   document Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
   compte   PlanCompte @relation(fields: [compteId], references: [id])

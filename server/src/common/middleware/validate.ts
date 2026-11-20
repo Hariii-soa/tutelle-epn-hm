@@ -9,10 +9,11 @@ const fieldErrors = (e: z.ZodError) => {
 };
 
 export const validate =
-  (schema: z.ZodType, source: "body" | "params" = "body"): RequestHandler =>
-  (req, _res, next) => {
+  (schema: z.ZodType, source: "body" | "params" | "query" = "body"): RequestHandler =>
+  (req, res, next) => {
     const r = schema.safeParse(req[source]);
     if (!r.success) return next(new HttpError(400, "Données invalides", "VALIDATION", fieldErrors(r.error)));
     if (source === "body") req.body = r.data;
+    else if (source === "query") res.locals.query = r.data;
     next();
   };
