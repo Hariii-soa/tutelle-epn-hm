@@ -19,8 +19,8 @@ r.post("/ouvrir", validate(ouvrirBaSchema), async (req, res) => {
   res.json(await ouvrir(req, req.body));
 });
 
-r.get("/archives", validate(archivesQuerySchema, "query"), async (_req, res) => {
-  res.json(await listArchives(res.locals.query as ArchivesQuery));
+r.get("/archives", validate(archivesQuerySchema, "query"), async (req, res) => {
+  res.json(await listArchives(req.query as unknown as ArchivesQuery));
 });
 
 r.get("/:id", validate(idParams, "params"), async (req, res) => {
