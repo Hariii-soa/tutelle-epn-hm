@@ -8,6 +8,7 @@ export const env = z
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().min(32),
     CLIENT_ORIGIN: z.string().url().default("http://localhost:5173"),
+    ARCHIVE_DIR: z.string().default("./storage/archives"),
   })
   .parse(process.env);
 
