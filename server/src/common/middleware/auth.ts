@@ -18,3 +18,8 @@ export const requireAuth =
 
 export const requireAdmin: RequestHandler = (req, _res, next) =>
   req.user?.role === "ADMIN" ? next() : next(new HttpError(403, "Accès réservé à l'administrateur", "FORBIDDEN"));
+
+export const requireAgent: RequestHandler = (req, _res, next) =>
+  req.user?.role === "AGENT"
+    ? next()
+    : next(new HttpError(403, "Accès réservé au chargé de tutelle", "FORBIDDEN"));

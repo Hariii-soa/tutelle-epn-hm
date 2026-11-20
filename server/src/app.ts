@@ -8,6 +8,8 @@ import { errorHandler } from "./common/middleware/error.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
+import accueilRoutes from "./modules/accueil/accueil.routes.js";
+import etablissementsRoutes from "./modules/etablissements/etablissements.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -24,6 +26,8 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/accueil", accueilRoutes);
+app.use("/api/etablissements", etablissementsRoutes);
 
 app.use((_req, _res, next) => next(new HttpError(404, "Ressource introuvable", "NOT_FOUND")));
 app.use(errorHandler);

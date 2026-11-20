@@ -13,7 +13,7 @@ const ETABS = [
   { code: "UNIV-FIA", nom: "Universités de Fianarantsoa", ordre: 3 },
   { code: "CCI", nom: "Chambre de Commerce et de l'Industrialisation", ordre: 4 },
   { code: "EFTA", nom: "EFTA Iboaka", ordre: 5 },
-  { code: "CAFPA", nom: "CAFPA", ordre: 6 },
+  { code: "CAFPA", nom: "CAFPA Iboaka", ordre: 6 },
 ].map((e) => ({ ...e, plan: e.code === PCG_CODE ? PlanType.PCG : PlanType.PCOP }));
 
 type CompteJson = { numero: string; intitule: string; niveau: 1 | 2 | 3 };
