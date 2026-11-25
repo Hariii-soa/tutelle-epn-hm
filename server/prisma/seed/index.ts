@@ -2,7 +2,7 @@ import "dotenv/config";
 import { readFileSync } from "node:fs";
 import argon2 from "argon2";
 import { PlanType, Role } from "../../src/generated/prisma/client.js";
-import { encrypt } from "../../src/common/crypto/aes-gcm.js";
+import { blindIndex, encrypt } from "../../src/common/crypto/aes-gcm.js";
 import { prisma } from "../../src/common/db/prisma.js";
 
 const PCG_CODE = "CCI";
@@ -55,12 +55,15 @@ async function main() {
   }
 
   const pwd = process.env.SEED_ADMIN_PASSWORD;
-  if (!pwd) throw new Error("SEED_ADMIN_PASSWORD manquant");
+  const email = process.env.SEED_ADMIN_EMAIL;
+  if (!pwd || !email) throw new Error("SEED_ADMIN_PASSWORD / SEED_ADMIN_EMAIL manquant");
   await prisma.user.upsert({
     where: { identifiant: "admin" },
-    update: {},
+    update: { emailEnc: encrypt(email), emailIdx: blindIndex(email) },
     create: {
       identifiant: "admin",
+      emailEnc: encrypt(email),
+      emailIdx: blindIndex(email),
       nomEnc: encrypt("Administrateur"),
       prenomsEnc: encrypt("Bureau de tutelle"),
       matricule: "ADMIN",
