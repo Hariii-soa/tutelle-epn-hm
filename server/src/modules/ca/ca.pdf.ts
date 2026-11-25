@@ -9,11 +9,10 @@ type Style = { bold?: boolean; italic?: boolean; fill?: string };
 const M = 30;
 const HDR: Style = { bold: true, fill: "#EAF1EC" };
 const SECTION_LABEL = { FONCTIONNEMENT: "SECTION FONCTIONNEMENT", INVESTISSEMENT: "SECTION INVESTISSEMENT" } as const;
-const CALCULS: [keyof CalculCote, string, string, boolean][] = [
+const calculs = (n: number): [keyof CalculCote, string, string, boolean][] => [
   ["sousTotal", "SOUS-TOTAL", "SOUS-TOTAL", true],
-  ["previsionnel", "EXCÉDENT PRÉVISIONNEL", "DÉFICIT PRÉVISIONNEL", false],
   ["resultatR1", "RÉSULTAT BÉNÉFICIAIRE R1", "RÉSULTAT DÉFICITAIRE R1", false],
-  ["total1", "TOTAL 1", "TOTAL 1", true],
+  ["total", `TOTAL ${n}`, `TOTAL ${n}`, true],
 ];
 
 // espace simple : l'espace fine de toLocaleString("fr-FR") est absente de Helvetica
@@ -107,7 +106,7 @@ export const renderEtatSynthese = (etat: EtatPdf) =>
         y += h;
       }
 
-      for (const [key, gauche, droite, strong] of CALCULS) {
+      for (const [key, gauche, droite, strong] of calculs(s.numeroTotal)) {
         if (y + 18 > limit) {
           doc.addPage();
           y = head(M);
