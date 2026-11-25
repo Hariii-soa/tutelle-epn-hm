@@ -17,3 +17,13 @@ export const RUBRIQUE_META: Record<
   DEPENSE_FONCTIONNEMENT: { label: "Dépense de fonctionnement", code: "DF", nature: "DEPENSE", section: "FONCTIONNEMENT" },
   DEPENSE_INVESTISSEMENT: { label: "Dépense d'investissement", code: "DI", nature: "DEPENSE", section: "INVESTISSEMENT" },
 };
+
+export const SOMME_MSG = "Le budget additionnel doit être égal au budget primitif + l'excédent";
+
+export const sommeValide = (l: { budgetPrimitif: number; excedent: number; budgetAdditionnel: number }) =>
+  l.budgetPrimitif + l.excedent === l.budgetAdditionnel;
+
+export type ResultatEquilibre = "EGAL" | "RECETTES_SUPERIEURES" | "RECETTES_INFERIEURES";
+
+export const resultatOf = (ecart: number): ResultatEquilibre =>
+  ecart === 0 ? "EGAL" : ecart > 0 ? "RECETTES_SUPERIEURES" : "RECETTES_INFERIEURES";
