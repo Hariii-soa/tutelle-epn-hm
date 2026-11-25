@@ -3,6 +3,8 @@ import PDFDocument from "pdfkit";
 export type BaPdfData = {
   exercice: number;
   etablissement: string;
+  mission: string | null;
+  programme: string | null;
   rubriqueLabel: string; // « Recette de fonctionnement »
   section: "FONCTIONNEMENT" | "INVESTISSEMENT";
   lignes: { numero: number; intitule: string; budgetPrimitif: number; excedent: number; budgetAdditionnel: number }[];
@@ -30,6 +32,8 @@ export function renderBudgetAdditionnel(d: BaPdfData): Promise<Buffer> {
 
     doc.font("Helvetica").fontSize(12).text(`BUDGET ADDITIONNEL DE L'ANNÉE : ${d.exercice}`, { align: "center" });
     doc.moveDown(0.4).font("Helvetica-Bold").fontSize(9).text(d.etablissement.toUpperCase(), { align: "center" });
+    doc.moveDown(0.3).font("Helvetica-Bold").text(`MISSION : ${d.mission ?? "Non renseignée"}`, { align: "center" });
+    doc.text(`PROGRAMME : ${d.programme ?? "Non renseigné"}`, { align: "center" });
     doc.text("(Unité monétaire : ARIARY)", { align: "center" });
     doc.moveDown(1).font("Helvetica-Bold").fontSize(10).text(d.rubriqueLabel.toUpperCase(), X, doc.y, { underline: true });
     let y = doc.y + 6;

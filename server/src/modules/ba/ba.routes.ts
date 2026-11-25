@@ -8,9 +8,12 @@ import {
   ligneParams,
   modifierBaSchema,
   ouvrirBaSchema,
+  equilibreQuerySchema,
+  enteteBaSchema,
+  type EquilibreQuery,
   type ArchivesQuery,
 } from "./ba.schemas.js";
-import { addLigne, archive, consulter, listArchives, modifier, ouvrir, removeLigne } from "./ba.service.js";
+import { addLigne, archive, consulter, listArchives, modifier, ouvrir, removeLigne, equilibre, majEntete } from "./ba.service.js";
 
 const r = Router();
 r.use(requireAuth(), requireAgent);
@@ -21,6 +24,10 @@ r.post("/ouvrir", validate(ouvrirBaSchema), async (req, res) => {
 
 r.get("/archives", validate(archivesQuerySchema, "query"), async (req, res) => {
   res.json(await listArchives(req.query as unknown as ArchivesQuery));
+});
+
+r.get("/equilibre", validate(equilibreQuerySchema, "query"), async (req, res) => {
+  res.json(await equilibre(req.query as unknown as EquilibreQuery));
 });
 
 r.get("/:id", validate(idParams, "params"), async (req, res) => {
@@ -41,6 +48,10 @@ r.delete("/:id/lignes/:ligneId", validate(ligneParams, "params"), async (req, re
 
 r.post("/:id/archive", validate(idParams, "params"), async (req, res) => {
   res.json(await archive(req, req.params.id as string));
+});
+
+r.patch("/:id/entete", validate(idParams, "params"), validate(enteteBaSchema), async (req, res) => {
+  res.json(await majEntete(req, req.params.id as string, req.body));
 });
 
 export default r;

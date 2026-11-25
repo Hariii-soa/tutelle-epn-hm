@@ -3,8 +3,8 @@ import { prisma } from "../../common/db/prisma.js";
 import { HttpError } from "../../common/http/errors.js";
 import { audit } from "../audit/audit.service.js";
 import { getEtablissement } from "../etablissements/etablissements.service.js";
-import { RUBRIQUE_META, type BaRubrique } from "./ba.rules.js";
-import type { ArchivesQuery, LigneBaInput, LigneModifInput } from "./ba.schemas.js";
+import { RUBRIQUE_META,BA_RUBRIQUES,resultatOf, type BaRubrique } from "./ba.rules.js";
+import type { ArchivesQuery, LigneBaInput, LigneModifInput, EquilibreQuery, EnteteBaInput } from "./ba.schemas.js";
 import { renderBudgetAdditionnel } from "../../common/pdf/pdf.service.js";
 import { readPdf, savePdf } from "../../common/storage/archive.service.js";
 import { formatDateMg } from "../../common/time.js";
@@ -55,6 +55,8 @@ async function view(id: string) {
       code: meta.code,
       label: meta.label,
       titre: `${meta.label} ${d.exercice}`,
+      mission: d.mission,
+      programme: d.programme,
       section: meta.section,
       statut: d.statut,
       archivedAt: d.archivedAt, // « Enregistré le »
@@ -154,6 +156,8 @@ export async function archive(req: Request, id: string) {
     exercice: doc.exercice,
     etablissement: doc.etablissement.nom,
     rubriqueLabel: v.document.label,
+    mission: doc.mission,
+    programme: doc.programme,
     section: v.document.section,
     lignes: v.lignes,
     totaux: v.totaux,
@@ -297,4 +301,69 @@ export async function lirePdf(req: Request, id: string) {
     details: { type: "BA", rubrique: doc.rubrique },
   });
   return { buf, filename: `BA-${code}-${doc.exercice}-${doc.etablissement.code}.pdf` };
+}
+// Onglet « Tableau d'équilibre »
+export async function equilibre({ etablissementId, exercice }: EquilibreQuery) {
+  const etab = await getEtablissement(etablissementId);
+  const docs = await prisma.document.findMany({
+    where: { type: "BA", statut: "ARCHIVE", etablissementId, exercice },
+    select: { id: true, rubrique: true },
+  });
+  const sums = await prisma.ligneBA.groupBy({
+    by: ["documentId"],
+    where: { documentId: { in: docs.map((d) => d.id) } },
+    _sum: { budgetAdditionnel: true },
+  });
+  const totalOf = new Map(sums.map((s) => [s.documentId, Number(s._sum.budgetAdditionnel ?? 0n)]));
+
+  const rubriques = Object.fromEntries(
+    BA_RUBRIQUES.map((r) => {
+      const d = docs.find((x) => x.rubrique === r);
+      return [r, { archive: !!d, total: d ? (totalOf.get(d.id) ?? 0) : 0 }];
+    }),
+  ) as Record<BaRubrique, { archive: boolean; total: number }>;
+
+  const t = (r: BaRubrique) => rubriques[r].total;
+  const recettes = {
+    fonctionnement: t("RECETTE_FONCTIONNEMENT"),
+    investissement: t("RECETTE_INVESTISSEMENT"),
+    total: t("RECETTE_FONCTIONNEMENT") + t("RECETTE_INVESTISSEMENT"),
+  };
+  const depenses = {
+    fonctionnement: t("DEPENSE_FONCTIONNEMENT"),
+    investissement: t("DEPENSE_INVESTISSEMENT"),
+    total: t("DEPENSE_FONCTIONNEMENT") + t("DEPENSE_INVESTISSEMENT"),
+  };
+  const ecart = recettes.total - depenses.total;
+
+  return {
+    etablissement: { id: etab.id, code: etab.code, nom: etab.nom },
+    exercice,
+    sectionsArchivees: docs.length,
+    sectionsTotal: BA_RUBRIQUES.length,
+    rubriques,
+    recettes,
+    depenses,
+    ecart,
+    resultat: resultatOf(ecart),
+  };
+}
+// Mission / programme affichés en tête du tableau et du PDF
+export async function majEntete(req: Request, id: string, e: EnteteBaInput) {
+  const doc = await getBa(id);
+  assertBrouillon(doc);
+  if (doc.mission === e.mission && doc.programme === e.programme) return view(id);
+
+  const { count } = await prisma.document.updateMany({
+    where: { id, statut: "BROUILLON" },
+    data: { mission: e.mission, programme: e.programme, updatedById: req.user!.id },
+  });
+  if (!count) throw new HttpError(409, "Ce budget additionnel est archivé et ne peut plus être modifié", "DOC_LOCKED");
+
+  await audit(req, "DOC_SAVE", {
+    entite: "Document",
+    entiteId: id,
+    details: { type: "BA", rubrique: doc.rubrique, op: "entete", mission: e.mission, programme: e.programme },
+  });
+  return view(id);
 }

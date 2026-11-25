@@ -12,32 +12,40 @@ export type LigneView = {
 };
 
 export type Montants = { credits: number | null; realisations: number | null };
-export type CalculCote = Record<"sousTotal" | "previsionnel" | "resultatR1" | "total1", Montants>;
+export type CalculCote = Record<"sousTotal" | "resultatR1" | "total", Montants>;
 export type EtatSection = {
   section: Section;
+  numeroTotal: 1 | 2;
   depenses: LigneView[];
   recettes: LigneView[];
   calcul: { depenses: CalculCote; recettes: CalculCote };
 };
 
 const SECTIONS: Section[] = ["FONCTIONNEMENT", "INVESTISSEMENT"];
-const vide = (): Montants => ({ credits: null, realisations: null });
-const coteVide = (): CalculCote => ({
-  sousTotal: vide(),
-  previsionnel: vide(),
-  resultatR1: vide(),
-  total1: vide(),
-});
+const NUMERO_TOTAL: Record<Section, 1 | 2> = { FONCTIONNEMENT: 1, INVESTISSEMENT: 2 };
 
-// PROVISOIRE : en attente des règles de calcul (null affiché « — »)
-const calculer = (_depenses: LigneView[], _recettes: LigneView[]) => ({
-  depenses: coteVide(),
-  recettes: coteVide(),
-});
+const sum = (ls: LigneView[], k: "creditsOuvertsN1" | "realisation") => ls.reduce((s, l) => s + l[k], 0);
 
+// r1 : montant du résultat R1 placé de ce côté (null si aucun)
+const cote = (ls: LigneView[], r1: number | null): CalculCote => {
+  const sousTotal: Montants = { credits: sum(ls, "creditsOuvertsN1"), realisations: sum(ls, "realisation") };
+  return {
+    sousTotal,
+    resultatR1: { credits: null, realisations: r1 },
+    total: { credits: sousTotal.credits, realisations: (sousTotal.realisations ?? 0) + (r1 ?? 0) },
+  };
+};
+
+const calculer = (depenses: LigneView[], recettes: LigneView[]) => {
+  const ecart = sum(recettes, "realisation") - sum(depenses, "realisation"); // recouvrement − mandatement
+  return {
+    depenses: cote(depenses, ecart > 0 ? ecart : null), // résultat bénéficiaire R1
+    recettes: cote(recettes, ecart < 0 ? -ecart : null), // résultat déficitaire R1 (valeur absolue)
+  };
+};
 export const buildEtat = (lignes: LigneView[]): EtatSection[] =>
   SECTIONS.map((section) => {
     const depenses = lignes.filter((l) => l.section === section && l.nature === "DEPENSE");
     const recettes = lignes.filter((l) => l.section === section && l.nature === "RECETTE");
-    return { section, depenses, recettes, calcul: calculer(depenses, recettes) };
+    return { section, numeroTotal: NUMERO_TOTAL[section], depenses, recettes, calcul: calculer(depenses, recettes) };
   });
