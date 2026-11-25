@@ -128,6 +128,8 @@ model Document {
   archivedAt      DateTime?
   createdById     String
   updatedById     String
+  mission         String?
+  programme       String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   rubrique        Rubrique  @default(GLOBAL)
